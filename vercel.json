@@ -1,0 +1,12 @@
+{
+  "cleanUrls": false,
+  "redirects": [
+    { "source": "/admin", "destination": "/vercel-admin.html", "permanent": false },
+    { "source": "/admin/:path*", "destination": "/vercel-admin.html", "permanent": false },
+    { "source": "/private/:path*", "destination": "/", "permanent": false }
+  ],
+  "headers": [
+    { "source": "/data/content.json", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+    { "source": "/(.*)\\.3mf", "headers": [{ "key": "Content-Type", "value": "model/3mf" }] }
+  ]
+}

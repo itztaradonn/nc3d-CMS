@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>NC3D</title>
+  <meta name="description" content="NC3D — customize your 3D print colors">
+  <link rel="icon" id="favicon" href="assets/img/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./assets/vendor/three/three.module.min.js",
+      "three/addons/": "./assets/vendor/three/addons/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./">
+      <img id="brandLogo" alt="" hidden>
+      <span id="brandName" class="brand-name">NC3D</span>
+    </a>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="th">TH</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1 id="tagline"></h1>
+    <p id="intro"></p>
+  </section>
+
+  <main class="studio">
+    <div class="stage" id="stage">
+      <div class="stage-tools">
+        <button type="button" id="btnRotate" class="chip" aria-pressed="true"><span class="dot"></span><span data-t="rotate"></span></button>
+        <button type="button" id="btnFit" class="icon-btn" title="Fit">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+        </button>
+      </div>
+      <div class="loader" id="loader" hidden>
+        <div class="spinner"></div>
+        <span data-t="loading"></span>
+        <div class="bar"><i id="loaderBar"></i></div>
+      </div>
+      <div class="stage-error" id="stageError" hidden></div>
+      <p class="hint" data-t="dragHint"></p>
+    </div>
+
+    <aside class="panel">
+      <div class="panel-head">
+        <span class="eyebrow" data-t="customize"></span>
+        <h2 id="modelName"></h2>
+        <p id="modelPrice" class="price"></p>
+        <p id="modelDesc" class="desc"></p>
+      </div>
+      <div id="zones" class="zones"></div>
+      <div class="actions">
+        <button type="button" class="btn ghost" id="btnReset" data-t="reset"></button>
+        <button type="button" class="btn ghost" id="btnRandom" data-t="random"></button>
+        <button type="button" class="btn ghost" id="btnShot" data-t="screenshot"></button>
+        <button type="button" class="btn ghost" id="btnShare" data-t="share"></button>
+      </div>
+      <button type="button" class="btn primary order" id="btnOrder">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.5 3.7 7.2V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.2S17.5 2 12 2zm1 12.4-2.6-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.4 5.8z"/></svg>
+        <span data-t="order"></span>
+      </button>
+      <p class="order-hint" data-t="orderHint"></p>
+    </aside>
+  </main>
+
+  <section class="gallery-wrap">
+    <h3 data-t="models"></h3>
+    <div class="gallery" id="gallery"></div>
+  </section>
+
+  <footer class="footer" id="footer"></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

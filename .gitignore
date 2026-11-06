@@ -1,0 +1,10 @@
+# created on the server by setup / admin
+private/auth.php
+private/ratelimit.php
+private/content.lock
+private/content.backup.json
+private/.tmp-*
+private/.up-*
+data/.tmp-*
+node_modules/
+.DS_Store
