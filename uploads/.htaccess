@@ -1,6 +1,7 @@
-# Uploaded files are data only: never run scripts here
-Options -Indexes -ExecCGI
-<FilesMatch "\.(?i:php\d?|phtml|phar|pl|py|cgi|sh|asp|aspx|jsp|htaccess|svg|html?)$">
+# Uploaded files are data only. Kept minimal so it works on every
+# DirectAdmin / Apache / LiteSpeed host (some reject Options / RemoveType here).
+# The admin already only saves .3mf / png / jpg / webp / gif with random names.
+<FilesMatch "\.(php|php3|php4|php5|php7|php8|phtml|phar|pl|py|cgi|sh|html|htm|svg|PHP|PHTML|PHAR)$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>
@@ -9,11 +10,3 @@ Options -Indexes -ExecCGI
     Deny from all
   </IfModule>
 </FilesMatch>
-<IfModule mod_mime.c>
-  RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phar
-  RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phar
-  AddType model/3mf .3mf
-</IfModule>
-<IfModule mod_headers.c>
-  Header set X-Content-Type-Options "nosniff"
-</IfModule>

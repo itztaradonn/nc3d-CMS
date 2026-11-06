@@ -91,8 +91,17 @@ export class Viewer {
   }
 
   async loadUrl(url, onProgress) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Cannot load model (' + res.status + ')');
+    let res = await fetch(url).catch(() => null);
+    if (!res || !res.ok) {
+      // host blocked the direct file → try PHP streamer (DirectAdmin)
+      const m = url.match(/(?:^|\/)(uploads\/models\/[^?#]+)$/);
+      if (m) {
+        const base = url.slice(0, url.length - m[1].length);
+        const alt = await fetch(base + 'model.php?f=' + encodeURIComponent(m[1])).catch(() => null);
+        if (alt && alt.ok) res = alt;
+      }
+    }
+    if (!res || !res.ok) throw new Error('Cannot load model (' + (res ? res.status : 'network') + '): ' + url);
     let buf;
     const total = +res.headers.get('content-length') || 0;
     if (onProgress && res.body && total) {
