@@ -1,5 +1,8 @@
 // NC3D admin panel
-import { Viewer } from '../assets/js/viewer3d.js';
+import { Viewer, fetchModel } from '../assets/js/viewer3d.js';
+import { parse3MF } from '../assets/js/threemf.js';
+import { CLICKER_TEXTS } from '../assets/js/clicker-ui.js';
+import { extractKit, buildClicker, tokenize, clickerConfig, DEFAULT_ROLES } from '../assets/js/nameclicker.js';
 import { loadContent, tr, resolveZones, colorById, zoneColors } from '../assets/js/content.js';
 
 const CSRF = document.querySelector('meta[name=csrf]').content;
@@ -127,7 +130,7 @@ function renderModels() {
     };
     list.append(el('div', { class: 'mitem' + (m.visible === false ? ' hiddenm' : '') },
       th,
-      el('div', { class: 'info' }, el('b', {}, tr(m.name, 'th') || m.id), el('small', {}, tr(m.name, 'en') + ' · ' + (m.zones || []).length + ' zones · ' + m.id)),
+      el('div', { class: 'info' }, el('b', {}, tr(m.name, 'th') || m.id), el('small', {}, tr(m.name, 'en') + ' · ' + (m.type === 'nameclicker' ? 'Name clicker' : (m.zones || []).length + ' zones') + ' · ' + m.id)),
       el('label', { class: 'row small' }, el('input', { type: 'checkbox', checked: m.visible !== false, onchange: async (e) => {
         try { await api('toggle_model', { id: m.id, visible: e.target.checked ? '1' : '' }); render(); } catch (er) { toast(er.message, true); }
       } }), 'Show'),
@@ -153,6 +156,9 @@ function openEditor(model) {
   const originalId = model ? model.id : '';
   const newUploads = [];
   let parts = [];
+  let kit = null; let kitError = '';
+  const isClk = () => d.type === 'nameclicker';
+  if (isClk()) d.clicker = clickerConfig(d);
 
   app.innerHTML = '';
   const left = el('div');
@@ -189,6 +195,7 @@ function openEditor(model) {
 
   async function loadPreview() {
     if (!d.file) return;
+    if (isClk()) { await loadKit(); drawLeft(); return; }
     const msg = prevBox.querySelector('.msg');
     if (msg) msg.textContent = 'Loading…';
     try {
@@ -231,7 +238,17 @@ function openEditor(model) {
         el('label', { class: 'field' }, el('span', {}, 'Visible / แสดง'),
           el('select', { onchange: (e) => { d.visible = e.target.value === '1'; } },
             el('option', { value: '1', selected: d.visible !== false }, 'Show / แสดง'),
-            el('option', { value: '0', selected: d.visible === false }, 'Hide / ซ่อน'))))
+            el('option', { value: '0', selected: d.visible === false }, 'Hide / ซ่อน')))),
+      el('label', { class: 'field', style: 'margin-top:12px' }, el('span', {}, 'Model type / ประเภทโมเดล'),
+        el('select', { class: 'inp', onchange: async (e) => {
+          d.type = e.target.value === 'nameclicker' ? 'nameclicker' : undefined;
+          if (isClk()) d.clicker = clickerConfig(d);
+          parts = []; kit = null; kitError = '';
+          drawLeft(); await loadPreview();
+        } },
+          el('option', { value: 'standard', selected: !isClk() }, 'Standard — color zones / เลือกสีทีละชิ้น'),
+          el('option', { value: 'nameclicker', selected: isClk() }, 'Name clicker — type a name / พวงกุญแจพิมพ์ชื่อ')),
+        el('p', { class: 'hint' }, 'Name clicker: upload a 3MF that has frame parts, a keycap and letter text parts (e.g. Flexi Modular Name Clicker). พวงกุญแจพิมพ์ชื่อ: ใช้ไฟล์ที่มีกรอบ ปุ่ม และตัวอักษร'))
     );
     left.append(info);
 
@@ -262,6 +279,7 @@ function openEditor(model) {
       } catch (e) { toast(e.message, true); }
     }
 
+    if (isClk()) { drawClicker(); left.append(saveBar()); return; }
     if (!parts.length) { left.append(saveBar()); return; }
 
     // --- zones
@@ -357,6 +375,112 @@ function openEditor(model) {
         d.thumbnail ? el('button', { class: 'btn small danger', onclick: () => { d.thumbnail = ''; drawLeft(); } }, 'Remove') : null),
       el('p', { class: 'hint' }, 'Rotate the preview first to get a nice angle. หมุนพรีวิวให้สวยก่อนกดถ่าย')));
     left.append(saveBar());
+  }
+
+  async function loadKit() {
+    const msg = prevBox.querySelector('.msg');
+    if (msg) msg.textContent = 'Loading…';
+    try {
+      const buf = await fetchModel(url(d.file));
+      const ps = parse3MF(buf).parts;
+      kit = extractKit(ps, d.clicker.roles);
+      kit.allParts = ps;
+      kitError = '';
+      if (msg) msg.remove();
+      buildPreview();
+    } catch (e) {
+      kit = null; kitError = e.message || String(e);
+      if (msg) msg.textContent = kitError;
+    }
+  }
+
+  function buildPreview(refit = true) {
+    if (!kit) return;
+    const cfg = clickerConfig(d);
+    const chars = tokenize(kit, cfg.sampleText || 'NC3D', cfg.maxChars);
+    const pal = content.palettes[0];
+    const col = (id, fb) => (colorById(content, id) || colorById(content, fb) || content.colors[0] || { hex: '#ccc' }).hex;
+    const slots = chars.map((ch, i) => ({ char: ch, frame: col(pal ? pal.colors[i % pal.colors.length] : cfg.defaults.frame, cfg.defaults.frame), letter: col(cfg.defaults.letter, 'black') }));
+    const { group, registry } = buildClicker(kit, slots, { cap: { hex: col(cfg.defaults.cap, 'white') }, cord: cfg.cord ? { hex: col(cfg.defaults.cord, 'white') } : null, cfg });
+    viewer.setObject(group, registry, refit);
+  }
+
+  function drawClicker() {
+    const c = d.clicker;
+    const num = (label, obj, key, step, hint) => el('label', { class: 'field' }, el('span', {}, label),
+      el('input', { class: 'inp', type: 'number', step: String(step), value: obj[key], oninput: (e) => { obj[key] = e.target.value === '' ? '' : Number(e.target.value); buildPreview(false); } }),
+      hint ? el('p', { class: 'hint' }, hint) : null);
+    // detection report
+    const rep = el('div', { class: 'section' }, el('h3', {}, 'Parts found / ชิ้นส่วนที่พบ'));
+    if (kitError) rep.append(el('p', { class: 'error' }, kitError));
+    if (kit) {
+      rep.append(
+        el('p', {}, '✓ Frame (end) / กรอบปลาย  ·  ', kit.hasMid ? '✓ Frame (middle) / กรอบกลาง' : '– no middle frame, using end frame', '  ·  ✓ Keycap / ปุ่ม'),
+        el('p', {}, '✓ ' + kit.chars.length + ' letters / ตัวอักษร: ', el('b', {}, kit.chars.join(' '))));
+    }
+    const roles = c.roles;
+    rep.append(el('details', {}, el('summary', { class: 'small muted' }, 'Advanced: part name patterns / ชื่อชิ้นส่วน (regex)'),
+      el('div', { class: 'grid2', style: 'margin-top:8px' },
+        ['baseEnd', 'baseMid', 'cap'].map((k) => el('label', { class: 'field' }, el('span', {}, { baseEnd: 'End frame', baseMid: 'Middle frame', cap: 'Keycap' }[k]),
+          el('input', { class: 'inp', type: 'text', value: roles[k] || DEFAULT_ROLES[k], onchange: async (e) => { roles[k] = e.target.value; await loadKit(); drawLeft(); } })))),
+      kit ? el('p', { class: 'hint' }, 'Part names in file: ' + [...new Set(kit.allParts.filter((p) => !p.text).map((p) => p.name.replace(/\s\d+$/, '')))].join(', ')) : null));
+    left.append(rep);
+
+    // settings
+    left.append(el('div', { class: 'section' }, el('h3', {}, 'Name settings / ตั้งค่าชื่อ'),
+      el('div', { class: 'grid2' },
+        num('Max buttons / ปุ่มสูงสุด', c, 'maxChars', 1),
+        el('label', { class: 'field' }, el('span', {}, 'Preview text / ชื่อตัวอย่าง'),
+          el('input', { class: 'inp', type: 'text', value: c.sampleText, oninput: (e) => { c.sampleText = e.target.value; buildPreview(); } })))));
+
+    // pricing
+    const pr = c.pricing;
+    left.append(el('div', { class: 'section' }, el('h3', {}, 'Price / ราคา'),
+      el('div', { class: 'grid2' },
+        num('Per button / ต่อปุ่ม', pr, 'perChar', 1),
+        num('Base price / ราคาเริ่มต้น', pr, 'base', 1),
+        num('Cord / ค่าเชือก', pr, 'cord', 1, 'Customer saves this when choosing "no cord". ลูกค้าไม่รับเชือกจะลดราคานี้'),
+        el('label', { class: 'field' }, el('span', {}, 'Currency / สกุลเงิน'),
+          el('input', { class: 'inp', type: 'text', value: pr.currency, oninput: (e) => { pr.currency = e.target.value; } }))),
+      el('p', { class: 'hint' }, 'Total = base + per button × buttons (+ cord). Set all to 0 to hide price. ตั้ง 0 ทั้งหมด = ไม่แสดงราคา')));
+
+    // colors per role
+    const roleSec = el('div', { class: 'section' }, el('h3', {}, 'Colors customers can pick / สีที่ลูกค้าเลือกได้'),
+      el('p', { class: 'hint', style: 'margin-bottom:8px' }, 'No colors ticked = all colors. ไม่ติ๊ก = ใช้ได้ทุกสี'));
+    for (const [role, label] of [['frame', 'Frame / กรอบ'], ['letter', 'Letter / ตัวอักษร'], ['cap', 'Keycap / ปุ่มกด'], ['cord', 'Cord / เชือก']]) {
+      const allowed = new Set(c.colors[role] || []);
+      const sw = el('div', { class: 'swrow' }, content.colors.map((col) => el('button', {
+        type: 'button', class: 'sw' + (allowed.has(col.id) ? ' on' : (allowed.size ? ' off' : '')),
+        style: 'background:' + col.hex, title: tr(col.name, 'th'),
+        onclick: () => { if (allowed.has(col.id)) allowed.delete(col.id); else allowed.add(col.id); c.colors[role] = content.colors.map((x) => x.id).filter((id) => allowed.has(id)); drawLeft(); },
+      })));
+      const def = el('select', { class: 'inp', onchange: (e) => { c.defaults[role] = e.target.value; buildPreview(false); } },
+        el('option', { value: '' }, 'Default: auto'),
+        content.colors.map((col) => el('option', { value: col.id, selected: c.defaults[role] === col.id }, tr(col.name, 'th') + ' / ' + tr(col.name, 'en'))));
+      roleSec.append(el('div', { class: 'zone' }, el('b', {}, label), sw, el('label', { class: 'field' }, el('span', {}, 'Default color / สีเริ่มต้น'), def)));
+    }
+    roleSec.append(el('label', { class: 'row' }, el('input', { type: 'checkbox', checked: c.cord, onchange: (e) => { c.cord = e.target.checked; buildPreview(false); drawLeft(); } }), 'Offer cord option / มีตัวเลือกเชือก'));
+    left.append(roleSec);
+
+    // fit tuning
+    left.append(el('div', { class: 'section' }, el('details', {}, el('summary', {}, el('b', {}, 'Fit tuning / ปรับตำแหน่ง (advanced)')),
+      el('div', { class: 'grid2', style: 'margin-top:10px' },
+        num('Keycap sticks out (mm) / ปุ่มยื่น', c, 'capOffset', 0.1),
+        num('Gap between frames (mm) / ระยะห่าง', c, 'gap', 0.1),
+        el('label', { class: 'field' }, el('span', {}, 'Letter rotation / หมุนตัวอักษร'),
+          el('select', { class: 'inp', onchange: (e) => { c.letterRotation = Number(e.target.value); buildPreview(false); } },
+            [0, 90, 180, 270].map((r) => el('option', { value: String(r), selected: Number(c.letterRotation) === r }, r + '°')))),
+        el('label', { class: 'row', style: 'margin-top:22px' }, el('input', { type: 'checkbox', checked: c.flipEnds, onchange: (e) => { c.flipEnds = e.target.checked; buildPreview(false); } }), 'Flip end frames / กลับด้านกรอบปลาย')),
+      el('p', { class: 'hint' }, 'Only change if the preview looks wrong for your 3MF. เปลี่ยนเมื่อพรีวิวดูผิดเท่านั้น'))));
+
+    // thumbnail
+    const tprev = el('div', { class: 'imgprev', style: d.thumbnail ? 'background-image:url(' + url(d.thumbnail) + ')' : '' });
+    left.append(el('div', { class: 'section' }, el('h3', {}, 'Thumbnail / รูปปก'),
+      el('div', { class: 'row' }, tprev,
+        el('button', { class: 'btn', onclick: async () => {
+          try { const path = (await api('upload_thumb', { data: viewer.snapshot('image/png', 600) })).path; newUploads.push(path); d.thumbnail = path; drawLeft(); toast('Thumbnail captured ✓'); } catch (e) { toast(e.message, true); }
+        } }, '📷 Capture from preview / ถ่ายจากพรีวิว'),
+        d.thumbnail ? el('button', { class: 'btn small danger', onclick: () => { d.thumbnail = ''; drawLeft(); } }, 'Remove') : null)));
   }
 
   function saveBar() {
@@ -507,14 +631,18 @@ function renderSite() {
 const TEXT_LABELS = {
   models: 'Gallery title', customize: 'Panel label', reset: 'Reset button', random: 'Shuffle button', screenshot: 'Save image button',
   share: 'Copy link button', order: 'Order button', orderHint: 'Under order button', copied: 'After order click (toast)',
-  linkCopied: 'After copy link', paletteTab: 'Palette tab', partsTab: 'Per-part tab', loadError: 'Model load failed note', loading: 'Loading', rotate: 'Auto rotate', dragHint: 'Viewer hint', noModels: 'No models', summaryTitle: 'Copied message title',
+  linkCopied: 'After copy link', paletteTab: 'Palette tab', partsTab: 'Per-part tab', loadError: 'Model load failed note',
+  nameLabel: 'Clicker: name label', maxButtons: 'Clicker: max buttons ({n})', symbols: 'Clicker: symbols', perButton: 'Clicker: per-button tab',
+  buttonN: 'Clicker: button number ({n})', frameColor: 'Clicker: frame color', letterColor: 'Clicker: letter color', capColor: 'Clicker: keycap color',
+  applyAll: 'Clicker: apply to all', cord: 'Clicker: cord', cordOn: 'Clicker: with cord', cordOff: 'Clicker: no cord', price: 'Clicker: price',
+  buttons: 'Clicker: "buttons" word', typeHint: 'Clicker: input placeholder', tapHint: 'Clicker: tap hint', loading: 'Loading', rotate: 'Auto rotate', dragHint: 'Viewer hint', noModels: 'No models', summaryTitle: 'Copied message title',
 };
 function renderTexts() {
   const s = clone(content.site);
   s.texts = s.texts || {};
   const sec = el('div', { class: 'section' });
   for (const [k, label] of Object.entries(TEXT_LABELS)) {
-    s.texts[k] = s.texts[k] || { th: '', en: '' };
+    s.texts[k] = s.texts[k] || clone(CLICKER_TEXTS[k] || { th: '', en: '' });
     sec.append(i18nField(label, s.texts, k));
   }
   app.append(el('h2', {}, 'Button & label texts / ข้อความปุ่ม'), sec,

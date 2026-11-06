@@ -1,9 +1,10 @@
 // NC3D public customizer
 import { Viewer } from './viewer3d.js';
+import { ClickerUI } from './clicker-ui.js';
 import { loadContent, tr, applyTheme, resolveZones, colorById, zoneColors, paletteSelection } from './content.js';
 
 const $ = (s) => document.querySelector(s);
-const state = { content: null, lang: 'th', model: null, selection: {}, zones: [], fixed: [], parts: [], viewer: null, mode: 'palette', palette: null };
+const state = { content: null, lang: 'th', model: null, selection: {}, zones: [], fixed: [], parts: [], viewer: null, mode: 'palette', palette: null, clicker: null };
 
 // fallback texts for keys an older content.json may not have yet
 const DEFAULT_TEXTS = {
@@ -187,7 +188,7 @@ function defaultSelection() {
 
 function parseHash() {
   const h = new URLSearchParams(location.hash.slice(1));
-  const out = { model: h.get('m'), colors: {} };
+  const out = { model: h.get('m'), colors: {}, clicker: ClickerUI.parsePreset(h) };
   (h.get('c') || '').split(',').filter(Boolean).forEach((pair) => {
     const i = pair.lastIndexOf(':');
     if (i > 0) out.colors[decodeURIComponent(pair.slice(0, i))] = decodeURIComponent(pair.slice(i + 1));
@@ -196,12 +197,48 @@ function parseHash() {
 }
 function updateHash() {
   if (!state.model) return;
+  if (state.clicker && state.clicker.model === state.model) {
+    history.replaceState(null, '', '#m=' + encodeURIComponent(state.model.id) + '&' + state.clicker.hashParams());
+    return;
+  }
   const c = Object.entries(state.selection).map(([z, col]) => encodeURIComponent(z) + ':' + encodeURIComponent(col)).join(',');
   history.replaceState(null, '', '#m=' + encodeURIComponent(state.model.id) + '&c=' + c);
 }
 
 let loadToken = 0;
-async function selectModel(id, presetColors) {
+function showStandardPanel(on) {
+  $('#clickerPanel').hidden = on;
+  if (on) { $('#modeTabs').hidden = true; }
+  else { $('#modeTabs').hidden = true; $('#palettes').hidden = true; $('#zones').hidden = true; }
+}
+
+async function selectClicker(m, preset, token) {
+  showStandardPanel(false);
+  $('#panelNote').hidden = true;
+  $('#stageError').hidden = true;
+  $('#loader').hidden = false;
+  $('#loaderBar').style.width = '0';
+  renderGallery();
+  if (!state.clicker) {
+    state.clicker = new ClickerUI({
+      viewer: state.viewer, content: state.content, root: $('#clickerPanel'),
+      getLang: () => state.lang, t, onChange: () => updateHash(),
+    });
+  }
+  try {
+    await state.clicker.load(m, preset, (p) => { $('#loaderBar').style.width = Math.round(p * 100) + '%'; });
+    if (token !== loadToken) return;
+    updateHash();
+  } catch (e) {
+    if (token !== loadToken) return;
+    $('#stageError').textContent = e.message || String(e);
+    $('#stageError').hidden = false;
+  } finally {
+    if (token === loadToken) $('#loader').hidden = true;
+  }
+}
+
+async function selectModel(id, presetColors, clickerPreset) {
   const m = visibleModels().find((x) => x.id === id) || visibleModels()[0];
   if (!m) return;
   state.model = m;
@@ -209,6 +246,9 @@ async function selectModel(id, presetColors) {
   $('#modelName').textContent = tr(m.name, state.lang);
   $('#modelPrice').textContent = tr(m.price, state.lang);
   $('#modelDesc').textContent = tr(m.description, state.lang);
+  if (m.type === 'nameclicker') { selectClicker(m, clickerPreset, token); return; }
+  if (state.clicker) { state.clicker.destroy(); state.clicker = null; }
+  showStandardPanel(true);
   // show color choices right away (from saved zones), even before / if the 3D file fails
   state.zones = (m.zones || []).map((z) => ({ ...z, keys: [] }));
   state.fixed = [];
@@ -256,9 +296,12 @@ function applyPreset(presetColors) {
   }
 }
 
+function isClicker() { return state.clicker && state.clicker.model === state.model && state.clicker.kit; }
+
 function summaryText() {
   const m = state.model;
   const lines = [t('summaryTitle') + ' — ' + (state.content.site.name || 'NC3D'), tr(m.name, state.lang)];
+  if (isClicker()) { lines.push(...state.clicker.summaryLines(), location.href); return lines.join('\n'); }
   const pal = state.content.palettes.find((p) => p.id === state.palette);
   if (pal) lines.push(t('paletteTab') + ': ' + tr(pal.name, state.lang));
   for (const z of state.zones) {
@@ -272,7 +315,8 @@ function summaryText() {
 function bind() {
   document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => {
     state.lang = b.dataset.lang; lsSet('nc3d-lang', state.lang);
-    renderStatic(); renderGallery(); renderPanel();
+    renderStatic(); renderGallery();
+    if (isClicker()) state.clicker.render(); else renderPanel();
     if (state.model) {
       $('#modelName').textContent = tr(state.model.name, state.lang);
       $('#modelPrice').textContent = tr(state.model.price, state.lang);
@@ -287,9 +331,10 @@ function bind() {
   });
   state.viewer.controls.addEventListener('start', () => rot.setAttribute('aria-pressed', 'false'));
   $('#btnFit').addEventListener('click', () => state.viewer.fit());
-  $('#btnReset').addEventListener('click', () => { state.selection = defaultSelection(); state.palette = null; applyAll(); renderPanel(); updateHash(); });
+  $('#btnReset').addEventListener('click', () => { if (isClicker()) { state.clicker.reset(); return; } state.selection = defaultSelection(); state.palette = null; applyAll(); renderPanel(); updateHash(); });
   document.querySelectorAll('#modeTabs button').forEach((b) => b.addEventListener('click', () => { state.mode = b.dataset.mode; renderPanel(); }));
   $('#btnRandom').addEventListener('click', () => {
+    if (isClicker()) { state.clicker.randomize(); return; }
     for (const z of state.zones) {
       const list = zoneColors(state.content, z);
       if (list.length) state.selection[z.id] = list[Math.floor(Math.random() * list.length)].id;
@@ -324,7 +369,7 @@ async function main() {
   bind();
   const h = parseHash();
   renderGallery();
-  selectModel(h.model, h.colors);
+  selectModel(h.model, h.colors, h.clicker);
 }
 
 main().catch((e) => {

@@ -117,6 +117,47 @@ function sanitize_palettes(array $in, array $colorIds): array {
     }
     return $out;
 }
+function s_num($v, float $min, float $max, float $def): float {
+    if (!is_numeric($v)) return $def;
+    $f = (float)$v;
+    return max($min, min($max, $f));
+}
+function sanitize_clicker(array $c, array $colorIds): array {
+    $roles = is_array($c['roles'] ?? null) ? $c['roles'] : [];
+    $colors = is_array($c['colors'] ?? null) ? $c['colors'] : [];
+    $defs = is_array($c['defaults'] ?? null) ? $c['defaults'] : [];
+    $pr = is_array($c['pricing'] ?? null) ? $c['pricing'] : [];
+    $out = [
+        'maxChars' => (int)s_num($c['maxChars'] ?? 10, 1, 30, 10),
+        'sampleText' => s_str($c['sampleText'] ?? 'NC3D', 60),
+        'capOffset' => s_num($c['capOffset'] ?? 1.9, -20, 20, 1.9),
+        'gap' => s_num($c['gap'] ?? 0.6, -10, 20, 0.6),
+        'letterRotation' => in_array((int)($c['letterRotation'] ?? 90), [0, 90, 180, 270, -90], true) ? (int)$c['letterRotation'] : 90,
+        'flipEnds' => !empty($c['flipEnds']),
+        'cord' => !isset($c['cord']) || !empty($c['cord']),
+        'roles' => [],
+        'colors' => [],
+        'defaults' => [],
+        'pricing' => [
+            'base' => s_num($pr['base'] ?? 0, 0, 1000000, 0),
+            'perChar' => s_num($pr['perChar'] ?? 0, 0, 1000000, 0),
+            'cord' => s_num($pr['cord'] ?? 0, 0, 1000000, 0),
+            'currency' => s_str($pr['currency'] ?? '฿', 5) ?: '฿',
+        ],
+    ];
+    foreach (['baseEnd', 'baseMid', 'cap'] as $k) {
+        $v = s_str($roles[$k] ?? '', 120);
+        if ($v !== '' && @preg_match('/' . str_replace('/', '\/', $v) . '/i', '') !== false) $out['roles'][$k] = $v;
+    }
+    foreach (['frame', 'letter', 'cap', 'cord'] as $k) {
+        $list = is_array($colors[$k] ?? null) ? $colors[$k] : [];
+        $out['colors'][$k] = array_values(array_filter(array_map('strval', $list), function ($id) use ($colorIds) { return isset($colorIds[$id]); }));
+        $d = (string)($defs[$k] ?? '');
+        $out['defaults'][$k] = isset($colorIds[$d]) ? $d : '';
+    }
+    if (!$out['roles']) $out['roles'] = new stdClass();
+    return $out;
+}
 function sanitize_model(array $m, array $colorIds): array {
     $out = [
         'id' => s_id($m['id'] ?? ''),
@@ -129,6 +170,10 @@ function sanitize_model(array $m, array $colorIds): array {
         'zones' => [],
         'meshes' => new stdClass(),
     ];
+    if (($m['type'] ?? '') === 'nameclicker') {
+        $out['type'] = 'nameclicker';
+        $out['clicker'] = sanitize_clicker(is_array($m['clicker'] ?? null) ? $m['clicker'] : [], $colorIds);
+    }
     $zoneIds = [];
     foreach (($m['zones'] ?? []) as $z) {
         if (!is_array($z)) continue;

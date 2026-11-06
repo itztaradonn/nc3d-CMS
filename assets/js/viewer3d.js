@@ -13,6 +13,39 @@ export const FINISHES = {
   translucent: { roughness: 0.2, metalness: 0.0, opacity: 0.55 },
 };
 
+/** Download a 3MF (with progress). Falls back to model.php if the host blocks the file. */
+export async function fetchModel(url, onProgress) {
+    let res = await fetch(url).catch(() => null);
+    if (!res || !res.ok) {
+      // host blocked the direct file → try PHP streamer (DirectAdmin)
+      const m = url.match(/(?:^|\/)(uploads\/models\/[^?#]+)$/);
+      if (m) {
+        const base = url.slice(0, url.length - m[1].length);
+        const alt = await fetch(base + 'model.php?f=' + encodeURIComponent(m[1])).catch(() => null);
+        if (alt && alt.ok) res = alt;
+      }
+    }
+    if (!res || !res.ok) throw new Error('Cannot load model (' + (res ? res.status : 'network') + '): ' + url);
+    let buf;
+    const total = +res.headers.get('content-length') || 0;
+    if (onProgress && res.body && total) {
+      const reader = res.body.getReader();
+      const chunks = []; let got = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value); got += value.length;
+        onProgress(got / total);
+      }
+      const all = new Uint8Array(got); let o = 0;
+      for (const c of chunks) { all.set(c, o); o += c.length; }
+      buf = all.buffer;
+    } else {
+      buf = await res.arrayBuffer();
+    }
+    return buf;
+}
+
 export class Viewer {
   constructor(container, opts = {}) {
     this.container = container;
@@ -58,6 +91,8 @@ export class Viewer {
     this.root = new THREE.Group();
     this.scene.add(this.root);
     this.meshes = new Map(); // key -> mesh
+    this.tickers = [];
+    this.raycaster = new THREE.Raycaster();
     this.highlightKey = null;
 
     this._resize = () => this.resize();
@@ -67,6 +102,7 @@ export class Viewer {
     const loop = () => {
       this._raf = requestAnimationFrame(loop);
       this.controls.update();
+      for (const f of this.tickers) f();
       this.renderer.render(this.scene, this.camera);
     };
     loop();
@@ -91,35 +127,7 @@ export class Viewer {
   }
 
   async loadUrl(url, onProgress) {
-    let res = await fetch(url).catch(() => null);
-    if (!res || !res.ok) {
-      // host blocked the direct file → try PHP streamer (DirectAdmin)
-      const m = url.match(/(?:^|\/)(uploads\/models\/[^?#]+)$/);
-      if (m) {
-        const base = url.slice(0, url.length - m[1].length);
-        const alt = await fetch(base + 'model.php?f=' + encodeURIComponent(m[1])).catch(() => null);
-        if (alt && alt.ok) res = alt;
-      }
-    }
-    if (!res || !res.ok) throw new Error('Cannot load model (' + (res ? res.status : 'network') + '): ' + url);
-    let buf;
-    const total = +res.headers.get('content-length') || 0;
-    if (onProgress && res.body && total) {
-      const reader = res.body.getReader();
-      const chunks = []; let got = 0;
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value); got += value.length;
-        onProgress(got / total);
-      }
-      const all = new Uint8Array(got); let o = 0;
-      for (const c of chunks) { all.set(c, o); o += c.length; }
-      buf = all.buffer;
-    } else {
-      buf = await res.arrayBuffer();
-    }
-    return this.loadBuffer(buf);
+    return this.loadBuffer(await fetchModel(url, onProgress));
   }
 
   loadBuffer(buffer) {
@@ -179,6 +187,33 @@ export class Viewer {
     s.left = s.bottom = -radius * 2; s.right = s.top = radius * 2;
     s.near = 0.1; s.far = radius * 12;
     s.updateProjectionMatrix();
+  }
+
+  /** Show a ready-made object (Y-up, mm). registry: Map(key -> mesh) for setColor. */
+  setObject(obj, registry, refit = true) {
+    for (const m of this.meshes.values()) m.material.dispose();
+    this.root.clear();
+    this.meshes = registry || new Map();
+    this.root.add(obj);
+    this.root.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(obj);
+    if (!box.isEmpty()) {
+      const c = box.getCenter(new THREE.Vector3());
+      obj.position.x -= c.x;
+      obj.position.z -= c.z;
+      obj.position.y -= box.min.y;
+    }
+    this.root.updateMatrixWorld(true);
+    if (refit) this.fit();
+  }
+
+  /** First mesh under a screen point (clientX/Y), or null. */
+  pick(clientX, clientY) {
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const v = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    this.raycaster.setFromCamera(v, this.camera);
+    const hit = this.raycaster.intersectObject(this.root, true)[0];
+    return hit ? hit.object : null;
   }
 
   setColor(key, hex, finish = 'standard') {

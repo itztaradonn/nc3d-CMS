@@ -213,6 +213,55 @@
     ],
     "models": [
         {
+            "id": "name-clicker",
+            "type": "nameclicker",
+            "visible": true,
+            "name": {
+                "th": "พวงกุญแจชื่อ คลิกเกอร์",
+                "en": "Name Clicker Keychain"
+            },
+            "description": {
+                "th": "พิมพ์ชื่อ เลือกสีกรอบและตัวอักษรทีละปุ่ม กดได้จริง มีเสียงคลิก",
+                "en": "Type a name, color every frame and letter. Real clicky buttons."
+            },
+            "price": {
+                "th": "ปุ่มละ 29 บาท",
+                "en": "29 THB per button"
+            },
+            "file": "uploads/models/name-clicker.3mf",
+            "thumbnail": "uploads/images/name-clicker-thumb.png",
+            "zones": [],
+            "meshes": {},
+            "clicker": {
+                "maxChars": 10,
+                "sampleText": "NC3D",
+                "capOffset": 1.9,
+                "gap": 0.6,
+                "letterRotation": 90,
+                "flipEnds": false,
+                "cord": true,
+                "roles": {},
+                "colors": {
+                    "frame": [],
+                    "letter": [],
+                    "cap": [],
+                    "cord": []
+                },
+                "defaults": {
+                    "frame": "red",
+                    "letter": "black",
+                    "cap": "white",
+                    "cord": "white"
+                },
+                "pricing": {
+                    "base": 0,
+                    "perChar": 29,
+                    "cord": 10,
+                    "currency": "฿"
+                }
+            }
+        },
+        {
             "id": "sample-clicker",
             "visible": true,
             "name": {

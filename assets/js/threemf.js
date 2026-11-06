@@ -60,7 +60,9 @@ function parseConfigXml(files) {
         if (md.getAttribute('key') === 'extruder') info.extruder = parseInt(md.getAttribute('value'), 10);
       }
       for (const part of childrenByLocal(obj, 'part')) {
-        const p = { name: null, subtype: part.getAttribute('subtype') || 'normal_part', extruder: null };
+        const p = { name: null, subtype: part.getAttribute('subtype') || 'normal_part', extruder: null, text: null };
+        const ti = childrenByLocal(part, 'text_info')[0];
+        if (ti) p.text = ti.getAttribute('text');
         for (const md of childrenByLocal(part, 'metadata')) {
           if (md.getAttribute('key') === 'name') p.name = md.getAttribute('value');
           if (md.getAttribute('key') === 'extruder') p.extruder = parseInt(md.getAttribute('value'), 10);
@@ -229,7 +231,7 @@ export function parse3MF(buffer) {
       if (!color && ctx.extruder && filament[ctx.extruder - 1]) color = filament[ctx.extruder - 1];
       if (!name) name = 'Part';
       nameCount[name] = (nameCount[name] || 0) + 1;
-      parts.push({ key, name, geometry: geometryFor(path, obj), matrix: matrix.clone(), color });
+      parts.push({ key, name, geometry: geometryFor(path, obj), matrix: matrix.clone(), color, text: ctx.text || null, objectName: ctx.objName || null, item: ctx.item });
     }
     for (const c of obj.components) {
       const childPath = c.path || path;
@@ -240,6 +242,7 @@ export function parse3MF(buffer) {
         if (info) {
           if (info.subtype && info.subtype !== 'normal_part') continue; // modifiers / negative parts
           next.partName = info.name || null;
+          next.text = info.text || null;
           if (info.extruder) next.extruder = info.extruder;
         }
       }
@@ -255,6 +258,8 @@ export function parse3MF(buffer) {
       objName: (info && info.name) || null,
       extruder: (info && info.extruder) || null,
       partName: null,
+      text: null,
+      item: i,
     };
     walk(it.path || rootPath, it.objectid, it.transform, 'i' + i, ctx, 0);
   });

@@ -29,6 +29,21 @@ Customers pick a model, choose a color for every part, spin it in 3D, and tap **
 - ปรับได้: รวมหลายชิ้นในโซนเดียว, จำกัดสีที่เลือกได้, ตั้งสีเริ่มต้น, ล็อกสีบางชิ้น, ซ่อนบางชิ้น
 - กด 📷 เพื่อถ่ายรูปปกจากพรีวิวได้เลย
 
+
+## 🇹🇭 พวงกุญแจพิมพ์ชื่อ (Name Clicker)
+ประเภทโมเดลพิเศษ: ลูกค้าพิมพ์ชื่อ แล้วระบบประกอบพวงกุญแจจาก **ชิ้นส่วนจริงในไฟล์ 3MF** ให้อัตโนมัติ (กรอบ + ปุ่ม + ตัวอักษร)
+- ลูกค้าเลือกได้: ชุดสีสำเร็จ (ไล่สีกรอบทีละปุ่ม), สีกรอบ/สีตัวอักษรแต่ละปุ่ม, สีปุ่มกด, ใส่/ไม่ใส่เชือก, สัญลักษณ์ ♥ ★ ฯลฯ
+- แตะปุ่มบนโมเดลเพื่อกดเล่น มีเสียงคลิก
+- ราคาคำนวณตามจำนวนปุ่ม (ตั้งในแอดมิน)
+
+**เพิ่มโมเดลแบบนี้:** แอดมิน → เพิ่มโมเดล → ประเภท "Name clicker" → อัปโหลด 3MF จาก Bambu Studio ที่มี
+1. กรอบปลาย (ชื่อ part เช่น `individual base`)
+2. กรอบกลาง (`individual base 2`, ถ้าไม่มีจะใช้กรอบปลายแทน)
+3. ปุ่ม (`key cap`) ที่มีตัวอักษรเป็น Text ของ Bambu (A–Z, 0–9, สัญลักษณ์)
+
+ระบบจะบอกว่าพบชิ้นส่วนอะไรบ้างและตัวอักษรอะไรบ้าง ถ้าชื่อ part ต่างจากนี้ แก้ได้ในหัวข้อ Advanced
+ทิป: ลบรูป/thumbnail ใน 3MF ออกก่อน (หรือ export เฉพาะโมเดล) ไฟล์จะเล็กลง โหลดเร็วขึ้น
+
 ## 🇹🇭 ทดลองบน Vercel
 1. Vercel → **Add New Project** → เลือก repo นี้ → Framework: **Other** → Deploy (ไม่ต้องตั้งค่า build)
 2. หน้าเว็บลูกค้าใช้ได้ปกติ แต่ **หน้าแอดมินใช้ไม่ได้บน Vercel** (Vercel ไม่รัน PHP และเขียนไฟล์ไม่ได้)
@@ -57,7 +72,8 @@ Import the repo, choose Framework **Other**, and deploy. The public site runs fi
 ## Structure
 ```
 index.html            public customizer
-assets/js/            app.js (site), viewer3d.js (three.js viewer), threemf.js (3MF parser), content.js
+assets/js/            app.js (site), viewer3d.js (viewer), threemf.js (3MF parser), content.js,
+                      nameclicker.js + clicker-ui.js (name keychain builder)
 assets/vendor/three/  three.js r160 (MIT), bundled locally, no CDN needed
 admin/                PHP admin panel (index.php, api.php, setup.php, lib.php, admin.js)
 data/content.json     all site content (edited by the admin panel)
