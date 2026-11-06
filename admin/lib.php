@@ -80,7 +80,7 @@ function read_content(): array {
     $raw = @file_get_contents(NC3D_DATA);
     $c = $raw ? json_decode($raw, true) : null;
     if (!is_array($c)) $c = [];
-    $c += ['site' => [], 'colors' => [], 'models' => []];
+    $c += ['site' => [], 'colors' => [], 'palettes' => [], 'models' => []];
     return $c;
 }
 

@@ -60,7 +60,13 @@
         <p id="modelPrice" class="price"></p>
         <p id="modelDesc" class="desc"></p>
       </div>
+      <div class="mode-tabs" id="modeTabs" role="tablist" hidden>
+        <button type="button" role="tab" data-mode="palette" data-t="paletteTab"></button>
+        <button type="button" role="tab" data-mode="parts" data-t="partsTab"></button>
+      </div>
+      <div id="palettes" class="palettes" hidden></div>
       <div id="zones" class="zones"></div>
+      <p id="panelNote" class="panel-note" hidden></p>
       <div class="actions">
         <button type="button" class="btn ghost" id="btnReset" data-t="reset"></button>
         <button type="button" class="btn ghost" id="btnRandom" data-t="random"></button>

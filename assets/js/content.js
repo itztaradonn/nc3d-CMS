@@ -1,4 +1,10 @@
 // Shared helpers for content.json (public site + admin)
+export const DEFAULT_PALETTES = [
+  { id: 'rainbow', name: { th: 'สีรุ้ง', en: 'Rainbow' }, colors: ['red', 'yellow', 'mint', 'blue', 'purple'] },
+  { id: 'classic', name: { th: 'คลาสสิก', en: 'Classic' }, colors: ['black', 'orange', 'white', 'black'] },
+  { id: 'pastel', name: { th: 'พาสเทล', en: 'Pastel' }, colors: ['pink', 'mint', 'white', 'yellow'] },
+  { id: 'mono', name: { th: 'ขาวดำ', en: 'Mono' }, colors: ['white', 'black', 'grey', 'black'] },
+];
 export async function loadContent(url) {
   const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
   if (!res.ok) throw new Error('content ' + res.status);
@@ -6,6 +12,10 @@ export async function loadContent(url) {
   c.site = c.site || {};
   c.colors = c.colors || [];
   c.models = c.models || [];
+  // older content.json without palettes → use built-in starter set
+  if (!Array.isArray(c.palettes)) c.palettes = DEFAULT_PALETTES;
+  c.palettes = c.palettes.map((p) => ({ ...p, colors: (p.colors || []).filter((id) => c.colors.some((x) => x.id === id)) }))
+    .filter((p) => p.colors.length);
   return c;
 }
 
@@ -60,4 +70,18 @@ export function resolveZones(model, parts) {
     else if (m.color) fixed.push({ key: p.key, color: m.color });
   }
   return { zones: zones.filter((z) => z.keys.length), fixed };
+}
+
+/** Pick a palette color for each zone (zone i ← palette[i % n]); skip colors a zone doesn't allow. */
+export function paletteSelection(content, palette, zones, current) {
+  const sel = { ...current };
+  const n = palette.colors.length;
+  zones.forEach((z, i) => {
+    const allowed = zoneColors(content, z).map((c) => c.id);
+    for (let k = 0; k < n; k++) {
+      const id = palette.colors[(i + k) % n];
+      if (allowed.includes(id)) { sel[z.id] = id; break; }
+    }
+  });
+  return sel;
 }

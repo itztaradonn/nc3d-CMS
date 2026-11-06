@@ -100,6 +100,23 @@ function sanitize_colors(array $in): array {
     }
     return $out;
 }
+function sanitize_palettes(array $in, array $colorIds): array {
+    $out = []; $seen = [];
+    foreach ($in as $p) {
+        if (!is_array($p)) continue;
+        $id = s_id($p['id'] ?? '') ?: 'p' . substr(bin2hex(random_bytes(3)), 0, 6);
+        while (isset($seen[$id])) $id .= '-2';
+        $seen[$id] = 1;
+        $cols = [];
+        foreach ((is_array($p['colors'] ?? null) ? $p['colors'] : []) as $cid) {
+            $cid = (string)$cid;
+            if (isset($colorIds[$cid]) && count($cols) < 24) $cols[] = $cid;
+        }
+        if (!$cols) continue;
+        $out[] = ['id' => $id, 'name' => s_i18n($p['name'] ?? '', 60), 'colors' => $cols];
+    }
+    return $out;
+}
 function sanitize_model(array $m, array $colorIds): array {
     $out = [
         'id' => s_id($m['id'] ?? ''),
@@ -190,6 +207,13 @@ switch ($action) {
 
     case 'save_colors':
         $c['colors'] = sanitize_colors(body_json('data'));
+        $ids = [];
+        foreach ($c['colors'] as $col) $ids[$col['id']] = 1;
+        $c['palettes'] = sanitize_palettes($c['palettes'] ?? [], $ids);
+        save_or_fail($c);
+
+    case 'save_palettes':
+        $c['palettes'] = sanitize_palettes(body_json('data'), $colorIds);
         save_or_fail($c);
 
     case 'save_model':
@@ -292,6 +316,7 @@ switch ($action) {
         $n['colors'] = sanitize_colors(is_array($d['colors']) ? $d['colors'] : []);
         $ids = [];
         foreach ($n['colors'] as $col) $ids[$col['id']] = 1;
+        $n['palettes'] = sanitize_palettes(is_array($d['palettes'] ?? null) ? $d['palettes'] : [], $ids);
         $n['models'] = [];
         foreach ((is_array($d['models']) ? $d['models'] : []) as $m) if (is_array($m)) $n['models'][] = sanitize_model($m, $ids);
         save_or_fail($n);

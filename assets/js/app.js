@@ -1,16 +1,23 @@
 // NC3D public customizer
 import { Viewer } from './viewer3d.js';
-import { loadContent, tr, applyTheme, resolveZones, colorById, zoneColors } from './content.js';
+import { loadContent, tr, applyTheme, resolveZones, colorById, zoneColors, paletteSelection } from './content.js';
 
 const $ = (s) => document.querySelector(s);
-const state = { content: null, lang: 'th', model: null, selection: {}, zones: [], parts: [], viewer: null };
+const state = { content: null, lang: 'th', model: null, selection: {}, zones: [], fixed: [], parts: [], viewer: null, mode: 'palette', palette: null };
+
+// fallback texts for keys an older content.json may not have yet
+const DEFAULT_TEXTS = {
+  paletteTab: { th: 'ชุดสีสำเร็จ', en: 'Palettes' },
+  partsTab: { th: 'เลือกแต่ละชิ้น', en: 'Per part' },
+  loadError: { th: 'โหลดโมเดลไม่สำเร็จ แต่ยังเลือกสีได้', en: 'Model failed to load, colors still selectable' },
+};
 
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
 
 function t(key) {
   const texts = (state.content.site && state.content.site.texts) || {};
-  return tr(texts[key], state.lang) || key;
+  return tr(texts[key], state.lang) || tr(DEFAULT_TEXTS[key], state.lang) || key;
 }
 
 function toast(msg) {
@@ -80,6 +87,47 @@ function renderGallery() {
   }
 }
 
+function renderPanel() {
+  const pals = state.content.palettes;
+  const hasPal = pals.length > 0 && state.zones.length > 0;
+  const mode = hasPal ? state.mode : 'parts';
+  $('#modeTabs').hidden = !hasPal;
+  document.querySelectorAll('#modeTabs button').forEach((b) => {
+    const on = b.dataset.mode === mode;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  $('#palettes').hidden = mode !== 'palette';
+  $('#zones').hidden = mode !== 'parts';
+  renderPalettes();
+  renderZones();
+}
+
+function renderPalettes() {
+  const wrap = $('#palettes');
+  wrap.innerHTML = '';
+  for (const p of state.content.palettes) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pal' + (state.palette === p.id ? ' on' : '');
+    const dots = document.createElement('div'); dots.className = 'dots';
+    for (const id of p.colors) {
+      const c = colorById(state.content, id);
+      if (!c) continue;
+      const i = document.createElement('i'); i.style.background = c.hex; i.title = tr(c.name, state.lang);
+      dots.appendChild(i);
+    }
+    const name = document.createElement('b'); name.textContent = tr(p.name, state.lang);
+    b.append(dots, name);
+    b.addEventListener('click', () => {
+      state.palette = p.id;
+      state.selection = paletteSelection(state.content, p, state.zones, state.selection);
+      applyAll(); renderPanel(); updateHash();
+    });
+    wrap.appendChild(b);
+  }
+}
+
 function renderZones() {
   const wrap = $('#zones');
   wrap.innerHTML = '';
@@ -100,8 +148,8 @@ function renderZones() {
       btn.style.backgroundColor = c.hex;
       btn.title = tr(c.name, state.lang);
       btn.setAttribute('aria-label', tr(z.label, state.lang) + ': ' + tr(c.name, state.lang));
-      btn.addEventListener('click', () => { state.selection[z.id] = c.id; applyZone(z); renderZones(); updateHash(); });
-      btn.addEventListener('mouseenter', () => state.viewer.highlight(z.keys));
+      btn.addEventListener('click', () => { state.selection[z.id] = c.id; state.palette = null; applyZone(z); renderZones(); updateHash(); });
+      btn.addEventListener('mouseenter', () => state.viewer.highlight(z.keys || []));
       btn.addEventListener('mouseleave', () => state.viewer.highlight([]));
       sw.appendChild(btn);
     }
@@ -113,7 +161,7 @@ function renderZones() {
 function applyZone(z) {
   const c = colorById(state.content, state.selection[z.id]);
   if (!c) return;
-  for (const k of z.keys) state.viewer.setColor(k, c.hex, c.finish);
+  for (const k of (z.keys || [])) state.viewer.setColor(k, c.hex, c.finish);
 }
 
 function applyAll() {
@@ -161,7 +209,14 @@ async function selectModel(id, presetColors) {
   $('#modelName').textContent = tr(m.name, state.lang);
   $('#modelPrice').textContent = tr(m.price, state.lang);
   $('#modelDesc').textContent = tr(m.description, state.lang);
-  $('#zones').innerHTML = '';
+  // show color choices right away (from saved zones), even before / if the 3D file fails
+  state.zones = (m.zones || []).map((z) => ({ ...z, keys: [] }));
+  state.fixed = [];
+  state.palette = null;
+  state.selection = defaultSelection();
+  applyPreset(presetColors);
+  $('#panelNote').hidden = true;
+  renderPanel();
   $('#stageError').hidden = true;
   $('#loader').hidden = false;
   $('#loaderBar').style.width = '0';
@@ -170,31 +225,42 @@ async function selectModel(id, presetColors) {
     const parts = await state.viewer.loadUrl(m.file, (p) => { $('#loaderBar').style.width = Math.round(p * 100) + '%'; });
     if (token !== loadToken) return;
     state.parts = parts;
-    const r = resolveZones(m, parts);
+    let r = resolveZones(m, parts);
+    // saved mapping doesn't match this file (e.g. 3MF replaced) → one zone per part
+    if (!r.zones.length && parts.length) r = resolveZones({ zones: [], meshes: {} }, parts);
+    const prev = state.selection;
     state.zones = r.zones;
     state.fixed = r.fixed;
     state.selection = defaultSelection();
-    if (presetColors) {
-      for (const z of state.zones) {
-        const want = presetColors[z.id];
-        if (want && zoneColors(state.content, z).some((c) => c.id === want)) state.selection[z.id] = want;
-      }
-    }
+    for (const z of state.zones) if (prev[z.id]) state.selection[z.id] = prev[z.id];
     applyAll();
-    renderZones();
+    renderPanel();
     updateHash();
   } catch (e) {
     if (token !== loadToken) return;
     $('#stageError').textContent = e.message || String(e);
     $('#stageError').hidden = false;
+    $('#panelNote').textContent = t('loadError');
+    $('#panelNote').hidden = !state.zones.length;
+    if (!state.zones.length) { $('#panelNote').textContent = e.message || String(e); $('#panelNote').hidden = false; }
   } finally {
     if (token === loadToken) $('#loader').hidden = true;
+  }
+}
+
+function applyPreset(presetColors) {
+  if (!presetColors) return;
+  for (const z of state.zones) {
+    const want = presetColors[z.id];
+    if (want && zoneColors(state.content, z).some((c) => c.id === want)) state.selection[z.id] = want;
   }
 }
 
 function summaryText() {
   const m = state.model;
   const lines = [t('summaryTitle') + ' — ' + (state.content.site.name || 'NC3D'), tr(m.name, state.lang)];
+  const pal = state.content.palettes.find((p) => p.id === state.palette);
+  if (pal) lines.push(t('paletteTab') + ': ' + tr(pal.name, state.lang));
   for (const z of state.zones) {
     const c = colorById(state.content, state.selection[z.id]);
     lines.push('• ' + tr(z.label, state.lang) + ': ' + (c ? tr(c.name, state.lang) : '-'));
@@ -206,7 +272,7 @@ function summaryText() {
 function bind() {
   document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => {
     state.lang = b.dataset.lang; lsSet('nc3d-lang', state.lang);
-    renderStatic(); renderGallery(); renderZones();
+    renderStatic(); renderGallery(); renderPanel();
     if (state.model) {
       $('#modelName').textContent = tr(state.model.name, state.lang);
       $('#modelPrice').textContent = tr(state.model.price, state.lang);
@@ -221,13 +287,15 @@ function bind() {
   });
   state.viewer.controls.addEventListener('start', () => rot.setAttribute('aria-pressed', 'false'));
   $('#btnFit').addEventListener('click', () => state.viewer.fit());
-  $('#btnReset').addEventListener('click', () => { state.selection = defaultSelection(); applyAll(); renderZones(); updateHash(); });
+  $('#btnReset').addEventListener('click', () => { state.selection = defaultSelection(); state.palette = null; applyAll(); renderPanel(); updateHash(); });
+  document.querySelectorAll('#modeTabs button').forEach((b) => b.addEventListener('click', () => { state.mode = b.dataset.mode; renderPanel(); }));
   $('#btnRandom').addEventListener('click', () => {
     for (const z of state.zones) {
       const list = zoneColors(state.content, z);
       if (list.length) state.selection[z.id] = list[Math.floor(Math.random() * list.length)].id;
     }
-    applyAll(); renderZones(); updateHash();
+    state.palette = null;
+    applyAll(); renderPanel(); updateHash();
   });
   $('#btnShot').addEventListener('click', () => {
     const a = document.createElement('a');

@@ -413,7 +413,45 @@ function renderColors() {
   el('p', { class: 'hint' }, 'Changing an ID breaks zones that use it. อย่าเปลี่ยน ID ของสีที่ใช้อยู่'),
   el('div', { class: 'savebar' }, el('button', { class: 'btn primary', onclick: async () => {
     try { await api('save_colors', { data: list }); toast('Saved ✓'); render(); } catch (e) { toast(e.message, true); }
-  } }, 'Save colors / บันทึก')));
+  } }, 'Save colors / บันทึก')));;
+  renderPaletteEditor();
+}
+
+function renderPaletteEditor() {
+  const pals = clone(content.palettes || []);
+  const box = el('div');
+  app.append(el('h2', { style: 'margin-top:32px' }, 'Color palettes / ชุดสีสำเร็จ'),
+    el('p', { class: 'muted' }, 'Ready-made color sets. Customer taps one → zone 1 gets color 1, zone 2 gets color 2, … (repeats if fewer colors). ลูกค้ากดชุดสี → โซน 1 ได้สีที่ 1, โซน 2 ได้สีที่ 2 …'),
+    box);
+  function draw() {
+    box.innerHTML = '';
+    pals.forEach((p, i) => {
+      p.name = p.name || { th: '', en: '' };
+      const chosen = el('div', { class: 'swrow' }, p.colors.length ? p.colors.map((id, ci) => {
+        const c = content.colors.find((x) => x.id === id);
+        return el('button', { type: 'button', class: 'sw', title: 'Remove / ลบ', style: 'background:' + (c ? c.hex : '#ccc'),
+          onclick: () => { p.colors.splice(ci, 1); draw(); } });
+      }) : el('span', { class: 'hint' }, 'Click colors below to add / กดสีด้านล่างเพื่อเพิ่ม'));
+      const lib = el('div', { class: 'swrow' }, content.colors.map((c) => el('button', {
+        type: 'button', class: 'sw off', style: 'background:' + c.hex + ';opacity:.9', title: tr(c.name, 'th') + ' / ' + tr(c.name, 'en'),
+        onclick: () => { p.colors.push(c.id); draw(); } })));
+      box.append(el('div', { class: 'section' },
+        el('div', { class: 'row spread' }, el('b', {}, 'Palette ' + (i + 1)),
+          el('div', { class: 'row' },
+            el('button', { class: 'btn small', onclick: () => { if (i > 0) { [pals[i - 1], pals[i]] = [pals[i], pals[i - 1]]; draw(); } } }, '↑'),
+            el('button', { class: 'btn small danger', onclick: () => { pals.splice(i, 1); draw(); } }, 'Delete'))),
+        i18nField('Name / ชื่อชุดสี', p, 'name'),
+        el('div', { class: 'field', style: 'margin-top:8px' }, el('span', {}, 'Colors in order (click to remove) / สีตามลำดับโซน (กดเพื่อลบ)'), chosen),
+        el('div', { class: 'field', style: 'margin-top:8px' }, el('span', {}, 'Add color / เพิ่มสี'), lib)));
+    });
+  }
+  draw();
+  app.append(el('div', { class: 'row', style: 'margin-top:12px' },
+    el('button', { class: 'btn', onclick: () => { pals.push({ id: 'p' + Date.now().toString(36), name: { th: 'ชุดสีใหม่', en: 'New palette' }, colors: [] }); draw(); } }, '+ Add palette / เพิ่มชุดสี')),
+  el('div', { class: 'savebar' }, el('button', { class: 'btn primary', onclick: async () => {
+    if (pals.some((p) => !p.colors.length)) { toast('Each palette needs at least 1 color / ชุดสีต้องมีอย่างน้อย 1 สี', true); return; }
+    try { await api('save_palettes', { data: pals }); toast('Saved ✓'); render(); } catch (e) { toast(e.message, true); }
+  } }, 'Save palettes / บันทึกชุดสี')));
 }
 
 // ---------- site ----------
@@ -469,7 +507,7 @@ function renderSite() {
 const TEXT_LABELS = {
   models: 'Gallery title', customize: 'Panel label', reset: 'Reset button', random: 'Shuffle button', screenshot: 'Save image button',
   share: 'Copy link button', order: 'Order button', orderHint: 'Under order button', copied: 'After order click (toast)',
-  linkCopied: 'After copy link', loading: 'Loading', rotate: 'Auto rotate', dragHint: 'Viewer hint', noModels: 'No models', summaryTitle: 'Copied message title',
+  linkCopied: 'After copy link', paletteTab: 'Palette tab', partsTab: 'Per-part tab', loadError: 'Model load failed note', loading: 'Loading', rotate: 'Auto rotate', dragHint: 'Viewer hint', noModels: 'No models', summaryTitle: 'Copied message title',
 };
 function renderTexts() {
   const s = clone(content.site);

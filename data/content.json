@@ -1,75 +1,376 @@
 {
-  "site": {
-    "name": "NC3D",
-    "logo": "",
-    "favicon": "",
-    "defaultLang": "th",
-    "tagline": { "th": "ออกแบบสีชิ้นงาน 3D ของคุณเอง แล้วสั่งได้ทันที", "en": "Design your own 3D print colors, then order in one tap" },
-    "intro": { "th": "เลือกแบบ เลือกสีทีละชิ้น หมุนดูได้ 360° แล้วส่งแบบให้เราทาง Facebook", "en": "Pick a model, color every part, spin it 360°, then send your design to us on Facebook." },
-    "footer": { "th": "© NC3D — งานพิมพ์ 3D สั่งทำ", "en": "© NC3D — Custom 3D printing" },
-    "facebookUrl": "https://www.facebook.com/",
-    "messengerUrl": "https://m.me/",
-    "orderTarget": "messenger",
-    "theme": {
-      "primary": "#ff5a1f",
-      "background": "#f4f1ec",
-      "surface": "#ffffff",
-      "text": "#1d1f24",
-      "stage": "#e7e2da"
+    "site": {
+        "name": "NC3D",
+        "logo": "",
+        "favicon": "",
+        "defaultLang": "th",
+        "tagline": {
+            "th": "ออกแบบสีชิ้นงาน 3D ของคุณเอง แล้วสั่งได้ทันที",
+            "en": "Design your own 3D print colors, then order in one tap"
+        },
+        "intro": {
+            "th": "เลือกแบบ เลือกสีทีละชิ้น หมุนดูได้ 360° แล้วส่งแบบให้เราทาง Facebook",
+            "en": "Pick a model, color every part, spin it 360°, then send your design to us on Facebook."
+        },
+        "footer": {
+            "th": "© NC3D — งานพิมพ์ 3D สั่งทำ",
+            "en": "© NC3D — Custom 3D printing"
+        },
+        "facebookUrl": "https://www.facebook.com/",
+        "messengerUrl": "https://m.me/",
+        "orderTarget": "messenger",
+        "theme": {
+            "primary": "#ff5a1f",
+            "background": "#f4f1ec",
+            "surface": "#ffffff",
+            "text": "#1d1f24",
+            "stage": "#e7e2da"
+        },
+        "texts": {
+            "models": {
+                "th": "แบบทั้งหมด",
+                "en": "Models"
+            },
+            "customize": {
+                "th": "ปรับแต่งสี",
+                "en": "Customize"
+            },
+            "reset": {
+                "th": "รีเซ็ต",
+                "en": "Reset"
+            },
+            "random": {
+                "th": "สุ่มสี",
+                "en": "Shuffle"
+            },
+            "screenshot": {
+                "th": "บันทึกรูป",
+                "en": "Save image"
+            },
+            "share": {
+                "th": "คัดลอกลิงก์",
+                "en": "Copy link"
+            },
+            "order": {
+                "th": "สั่งซื้อทาง Facebook",
+                "en": "Order on Facebook"
+            },
+            "orderHint": {
+                "th": "เราจะคัดลอกรายละเอียดแบบของคุณให้ แล้ววางในแชทได้เลย",
+                "en": "We copy your design details — just paste them in the chat."
+            },
+            "copied": {
+                "th": "คัดลอกรายละเอียดแล้ว! วางในแชทได้เลย",
+                "en": "Design copied! Paste it in the chat."
+            },
+            "linkCopied": {
+                "th": "คัดลอกลิงก์แล้ว",
+                "en": "Link copied"
+            },
+            "loading": {
+                "th": "กำลังโหลดโมเดล…",
+                "en": "Loading model…"
+            },
+            "rotate": {
+                "th": "หมุนอัตโนมัติ",
+                "en": "Auto rotate"
+            },
+            "dragHint": {
+                "th": "ลากเพื่อหมุน • ซูมด้วยล้อเมาส์/สองนิ้ว",
+                "en": "Drag to rotate • scroll / pinch to zoom"
+            },
+            "noModels": {
+                "th": "ยังไม่มีโมเดล",
+                "en": "No models yet"
+            },
+            "summaryTitle": {
+                "th": "แบบที่ฉันเลือก",
+                "en": "My design"
+            },
+            "paletteTab": {
+                "th": "ชุดสีสำเร็จ",
+                "en": "Palettes"
+            },
+            "partsTab": {
+                "th": "เลือกแต่ละชิ้น",
+                "en": "Per part"
+            },
+            "loadError": {
+                "th": "โหลดโมเดลไม่สำเร็จ แต่ยังเลือกสีได้",
+                "en": "Model failed to load, colors still selectable"
+            }
+        }
     },
-    "texts": {
-      "models": { "th": "แบบทั้งหมด", "en": "Models" },
-      "customize": { "th": "ปรับแต่งสี", "en": "Customize" },
-      "reset": { "th": "รีเซ็ต", "en": "Reset" },
-      "random": { "th": "สุ่มสี", "en": "Shuffle" },
-      "screenshot": { "th": "บันทึกรูป", "en": "Save image" },
-      "share": { "th": "คัดลอกลิงก์", "en": "Copy link" },
-      "order": { "th": "สั่งซื้อทาง Facebook", "en": "Order on Facebook" },
-      "orderHint": { "th": "เราจะคัดลอกรายละเอียดแบบของคุณให้ แล้ววางในแชทได้เลย", "en": "We copy your design details — just paste them in the chat." },
-      "copied": { "th": "คัดลอกรายละเอียดแล้ว! วางในแชทได้เลย", "en": "Design copied! Paste it in the chat." },
-      "linkCopied": { "th": "คัดลอกลิงก์แล้ว", "en": "Link copied" },
-      "loading": { "th": "กำลังโหลดโมเดล…", "en": "Loading model…" },
-      "rotate": { "th": "หมุนอัตโนมัติ", "en": "Auto rotate" },
-      "dragHint": { "th": "ลากเพื่อหมุน • ซูมด้วยล้อเมาส์/สองนิ้ว", "en": "Drag to rotate • scroll / pinch to zoom" },
-      "noModels": { "th": "ยังไม่มีโมเดล", "en": "No models yet" },
-      "summaryTitle": { "th": "แบบที่ฉันเลือก", "en": "My design" }
-    }
-  },
-  "colors": [
-    { "id": "black", "name": { "th": "ดำ", "en": "Black" }, "hex": "#22252b", "finish": "matte" },
-    { "id": "white", "name": { "th": "ขาว", "en": "White" }, "hex": "#f3f3f1", "finish": "standard" },
-    { "id": "grey", "name": { "th": "เทา", "en": "Grey" }, "hex": "#8d939c", "finish": "standard" },
-    { "id": "orange", "name": { "th": "ส้ม", "en": "Orange" }, "hex": "#ff5a1f", "finish": "standard" },
-    { "id": "red", "name": { "th": "แดง", "en": "Red" }, "hex": "#d7263d", "finish": "standard" },
-    { "id": "yellow", "name": { "th": "เหลือง", "en": "Yellow" }, "hex": "#ffc61a", "finish": "standard" },
-    { "id": "mint", "name": { "th": "เขียวมิ้นท์", "en": "Mint" }, "hex": "#5fd3b3", "finish": "standard" },
-    { "id": "blue", "name": { "th": "น้ำเงิน", "en": "Blue" }, "hex": "#2e5bff", "finish": "standard" },
-    { "id": "purple", "name": { "th": "ม่วง", "en": "Purple" }, "hex": "#7b4dff", "finish": "standard" },
-    { "id": "pink", "name": { "th": "ชมพู", "en": "Pink" }, "hex": "#ff8fc7", "finish": "standard" },
-    { "id": "silk-gold", "name": { "th": "ทองซิลค์", "en": "Silk Gold" }, "hex": "#d4a537", "finish": "silk" },
-    { "id": "clear", "name": { "th": "ใส", "en": "Clear" }, "hex": "#dfe9f2", "finish": "translucent" }
-  ],
-  "models": [
-    {
-      "id": "sample-clicker",
-      "visible": true,
-      "name": { "th": "คลิกเกอร์ NC3D", "en": "NC3D Clicker" },
-      "description": { "th": "พวงกุญแจกดเล่น 4 ชิ้น เลือกสีได้ทุกชิ้น", "en": "4-piece fidget keychain — every part in your color." },
-      "price": { "th": "เริ่มต้น 159 บาท", "en": "From 159 THB" },
-      "file": "uploads/models/sample-clicker.3mf",
-      "thumbnail": "",
-      "zones": [
-        { "id": "z-body", "label": { "th": "ตัวเครื่อง", "en": "Body" }, "colors": [], "default": "black" },
-        { "id": "z-button", "label": { "th": "ปุ่มกด", "en": "Button" }, "colors": [], "default": "orange" },
-        { "id": "z-ring", "label": { "th": "ขอบปุ่ม", "en": "Button ring" }, "colors": ["white", "black", "silk-gold", "grey"], "default": "white" },
-        { "id": "z-loop", "label": { "th": "ห่วงพวงกุญแจ", "en": "Key loop" }, "colors": [], "default": "black" }
-      ],
-      "meshes": {
-        "i0>10>1": { "name": "Body", "zone": "z-body" },
-        "i0>10>2": { "name": "Button", "zone": "z-button" },
-        "i0>10>3": { "name": "Button Ring", "zone": "z-ring" },
-        "i0>10>4": { "name": "Key Loop", "zone": "z-loop" }
-      }
-    }
-  ]
+    "colors": [
+        {
+            "id": "black",
+            "name": {
+                "th": "ดำ",
+                "en": "Black"
+            },
+            "hex": "#22252b",
+            "finish": "matte"
+        },
+        {
+            "id": "white",
+            "name": {
+                "th": "ขาว",
+                "en": "White"
+            },
+            "hex": "#f3f3f1",
+            "finish": "standard"
+        },
+        {
+            "id": "grey",
+            "name": {
+                "th": "เทา",
+                "en": "Grey"
+            },
+            "hex": "#8d939c",
+            "finish": "standard"
+        },
+        {
+            "id": "orange",
+            "name": {
+                "th": "ส้ม",
+                "en": "Orange"
+            },
+            "hex": "#ff5a1f",
+            "finish": "standard"
+        },
+        {
+            "id": "red",
+            "name": {
+                "th": "แดง",
+                "en": "Red"
+            },
+            "hex": "#d7263d",
+            "finish": "standard"
+        },
+        {
+            "id": "yellow",
+            "name": {
+                "th": "เหลือง",
+                "en": "Yellow"
+            },
+            "hex": "#ffc61a",
+            "finish": "standard"
+        },
+        {
+            "id": "mint",
+            "name": {
+                "th": "เขียวมิ้นท์",
+                "en": "Mint"
+            },
+            "hex": "#5fd3b3",
+            "finish": "standard"
+        },
+        {
+            "id": "blue",
+            "name": {
+                "th": "น้ำเงิน",
+                "en": "Blue"
+            },
+            "hex": "#2e5bff",
+            "finish": "standard"
+        },
+        {
+            "id": "purple",
+            "name": {
+                "th": "ม่วง",
+                "en": "Purple"
+            },
+            "hex": "#7b4dff",
+            "finish": "standard"
+        },
+        {
+            "id": "pink",
+            "name": {
+                "th": "ชมพู",
+                "en": "Pink"
+            },
+            "hex": "#ff8fc7",
+            "finish": "standard"
+        },
+        {
+            "id": "silk-gold",
+            "name": {
+                "th": "ทองซิลค์",
+                "en": "Silk Gold"
+            },
+            "hex": "#d4a537",
+            "finish": "silk"
+        },
+        {
+            "id": "clear",
+            "name": {
+                "th": "ใส",
+                "en": "Clear"
+            },
+            "hex": "#dfe9f2",
+            "finish": "translucent"
+        }
+    ],
+    "models": [
+        {
+            "id": "sample-clicker",
+            "visible": true,
+            "name": {
+                "th": "คลิกเกอร์ NC3D",
+                "en": "NC3D Clicker"
+            },
+            "description": {
+                "th": "พวงกุญแจกดเล่น 4 ชิ้น เลือกสีได้ทุกชิ้น",
+                "en": "4-piece fidget keychain — every part in your color."
+            },
+            "price": {
+                "th": "เริ่มต้น 159 บาท",
+                "en": "From 159 THB"
+            },
+            "file": "uploads/models/sample-clicker.3mf",
+            "thumbnail": "",
+            "zones": [
+                {
+                    "id": "z-body",
+                    "label": {
+                        "th": "ตัวเครื่อง",
+                        "en": "Body"
+                    },
+                    "colors": [],
+                    "default": "black"
+                },
+                {
+                    "id": "z-button",
+                    "label": {
+                        "th": "ปุ่มกด",
+                        "en": "Button"
+                    },
+                    "colors": [],
+                    "default": "orange"
+                },
+                {
+                    "id": "z-ring",
+                    "label": {
+                        "th": "ขอบปุ่ม",
+                        "en": "Button ring"
+                    },
+                    "colors": [
+                        "white",
+                        "black",
+                        "silk-gold",
+                        "grey"
+                    ],
+                    "default": "white"
+                },
+                {
+                    "id": "z-loop",
+                    "label": {
+                        "th": "ห่วงพวงกุญแจ",
+                        "en": "Key loop"
+                    },
+                    "colors": [],
+                    "default": "black"
+                }
+            ],
+            "meshes": {
+                "i0>10>1": {
+                    "name": "Body",
+                    "zone": "z-body"
+                },
+                "i0>10>2": {
+                    "name": "Button",
+                    "zone": "z-button"
+                },
+                "i0>10>3": {
+                    "name": "Button Ring",
+                    "zone": "z-ring"
+                },
+                "i0>10>4": {
+                    "name": "Key Loop",
+                    "zone": "z-loop"
+                }
+            }
+        }
+    ],
+    "palettes": [
+        {
+            "id": "rainbow",
+            "name": {
+                "th": "สีรุ้ง",
+                "en": "Rainbow"
+            },
+            "colors": [
+                "red",
+                "yellow",
+                "mint",
+                "blue",
+                "purple"
+            ]
+        },
+        {
+            "id": "classic",
+            "name": {
+                "th": "คลาสสิก",
+                "en": "Classic"
+            },
+            "colors": [
+                "black",
+                "orange",
+                "white",
+                "black"
+            ]
+        },
+        {
+            "id": "pastel",
+            "name": {
+                "th": "พาสเทล",
+                "en": "Pastel"
+            },
+            "colors": [
+                "pink",
+                "mint",
+                "white",
+                "yellow"
+            ]
+        },
+        {
+            "id": "mono",
+            "name": {
+                "th": "ขาวดำ",
+                "en": "Mono"
+            },
+            "colors": [
+                "white",
+                "black",
+                "grey",
+                "black"
+            ]
+        },
+        {
+            "id": "ocean",
+            "name": {
+                "th": "ทะเล",
+                "en": "Ocean"
+            },
+            "colors": [
+                "blue",
+                "white",
+                "mint",
+                "clear"
+            ]
+        },
+        {
+            "id": "luxury",
+            "name": {
+                "th": "หรูหรา",
+                "en": "Luxury"
+            },
+            "colors": [
+                "black",
+                "silk-gold",
+                "black",
+                "silk-gold"
+            ]
+        }
+    ]
 }

@@ -58,7 +58,7 @@ if (!is_logged_in()): ?><!doctype html>
   <b>NC3D Admin</b>
   <nav id="tabs">
     <button data-tab="models" class="on">Models / โมเดล</button>
-    <button data-tab="colors">Colors / สี</button>
+    <button data-tab="colors">Colors &amp; palettes / สี</button>
     <button data-tab="site">Site / หน้าเว็บ</button>
     <button data-tab="texts">Texts / ข้อความ</button>
     <button data-tab="account">Account / บัญชี</button>
